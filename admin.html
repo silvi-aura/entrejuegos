@@ -1,0 +1,437 @@
+<!DOCTYPE html>
+<html lang="es-AR">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Panel administrador — Entrejuegos Eventos</title>
+<meta name="robots" content="noindex,nofollow">
+<link rel="icon" href="/assets/favicon.png">
+<link href="https://fonts.googleapis.com/css2?family=Baloo+2:wght@600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&display=swap" rel="stylesheet">
+<style>
+:root{
+  --negro:#0a0a12;--negro-2:#14141f;--panel:#181826;--borde:#2a2a3d;
+  --fucsia:#ff2d95;--violeta:#7c3aed;--azul:#2b6cff;--celeste:#29c5f6;--amarillo:#ffd23f;
+  --texto:#f4f2fb;--texto-sec:#b7b3ca;
+  --grad-main:linear-gradient(120deg,var(--fucsia),var(--violeta) 55%,var(--azul));
+  --font-display:'Baloo 2',sans-serif;--font-body:'Plus Jakarta Sans',sans-serif;
+}
+*{box-sizing:border-box}
+body{margin:0;background:var(--negro);color:var(--texto);font-family:var(--font-body)}
+h1,h2,h3{font-family:var(--font-display);margin:0 0 10px}
+.wrap{max-width:1000px;margin:0 auto;padding:20px}
+.card{background:var(--panel);border:1px solid var(--borde);border-radius:16px;padding:18px;margin-bottom:16px}
+input,select,textarea{background:var(--negro-2);border:1px solid var(--borde);color:var(--texto);border-radius:10px;padding:10px 12px;font-family:var(--font-body);width:100%;margin-bottom:10px}
+label{font-size:.78rem;color:var(--texto-sec);font-weight:700;display:block;margin-bottom:4px}
+button{border:none;border-radius:50px;padding:10px 18px;font-weight:700;cursor:pointer;touch-action:manipulation;font-family:var(--font-body)}
+.btn-p{background:var(--grad-main);color:#fff}
+.btn-s{background:var(--negro-2);color:var(--texto);border:1px solid var(--borde)}
+.btn-d{background:#4a0d0d;color:#ffdada}
+.tabs{display:flex;gap:8px;flex-wrap:wrap;margin-bottom:18px}
+.tabs button{background:var(--negro-2);color:var(--texto-sec)}
+.tabs button.active{background:var(--grad-main);color:#fff}
+table{width:100%;border-collapse:collapse;font-size:.85rem}
+th,td{text-align:left;padding:8px;border-bottom:1px solid var(--borde)}
+.pill{padding:3px 10px;border-radius:20px;font-size:.7rem;font-weight:800}
+.grid2{display:grid;gap:10px;grid-template-columns:1fr 1fr}
+.hidden{display:none!important}
+.login-box{max-width:360px;margin:80px auto}
+.top{display:flex;justify-content:space-between;align-items:center;margin-bottom:20px;flex-wrap:wrap;gap:10px}
+.small{font-size:.78rem;color:var(--texto-sec)}
+</style>
+</head>
+<body>
+
+<div id="loginBox" class="wrap login-box">
+  <div class="card">
+    <h2>Panel administrador</h2>
+    <p class="small">Ingresá con el usuario que creaste en Firebase Authentication.</p>
+    <label>Email</label><input type="email" id="loginEmail">
+    <label>Contraseña</label><input type="password" id="loginPass">
+    <button class="btn-p" style="width:100%" onclick="hacerLogin()">Ingresar</button>
+    <p id="loginError" class="small hidden" style="color:var(--fucsia);margin-top:8px"></p>
+  </div>
+</div>
+
+<div id="app" class="wrap hidden">
+  <div class="top">
+    <h1>Entrejuegos — Admin</h1>
+    <div><span class="small" id="userEmail"></span> &nbsp; <button class="btn-s" onclick="hacerLogout()">Salir</button></div>
+  </div>
+
+  <div class="tabs">
+    <button data-tab="juegos" class="active">Juegos</button>
+    <button data-tab="combos">Combos</button>
+    <button data-tab="promos">Promociones</button>
+    <button data-tab="reservas">Reservas</button>
+    <button data-tab="bloqueos">Bloqueos</button>
+    <button data-tab="config">Configuración</button>
+  </div>
+
+  <!-- JUEGOS -->
+  <div id="tab-juegos" class="tabtab">
+    <div class="card">
+      <p class="small">Si todavía no cargaste los 7 juegos iniciales, hacelo acá (se crea una sola vez).</p>
+      <button class="btn-p" onclick="cargarDatosIniciales()">Cargar juegos y configuración iniciales</button>
+    </div>
+    <div id="juegosList"></div>
+  </div>
+
+  <!-- COMBOS -->
+  <div id="tab-combos" class="tabtab hidden">
+    <div class="card">
+      <h3>Nuevo combo</h3>
+      <label>Nombre</label><input id="c-nombre">
+      <label>Juegos incluidos</label>
+      <div id="c-juegos" class="grid2"></div>
+      <label>Descripción</label><textarea id="c-desc" rows="2"></textarea>
+      <div class="grid2">
+        <div><label>Precio habitual</label><input id="c-precio" type="number"></div>
+        <div><label>Precio promocional</label><input id="c-promo" type="number"></div>
+      </div>
+      <label>Condiciones</label><input id="c-cond">
+      <label>URL de imagen (opcional)</label><input id="c-img">
+      <button class="btn-p" onclick="crearCombo()">Crear combo</button>
+    </div>
+    <div id="combosList"></div>
+  </div>
+
+  <!-- PROMOCIONES -->
+  <div id="tab-promos" class="tabtab hidden">
+    <div class="card">
+      <h3>Nueva promoción</h3>
+      <label>Título</label><input id="p-titulo">
+      <label>Descripción</label><textarea id="p-desc" rows="2"></textarea>
+      <div class="grid2">
+        <div><label>Precio anterior</label><input id="p-old" type="number"></div>
+        <div><label>Precio actual</label><input id="p-new" type="number"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Vigencia desde</label><input id="p-ini" type="date"></div>
+        <div><label>Vigencia hasta</label><input id="p-fin" type="date"></div>
+      </div>
+      <label>Categoría</label>
+      <select id="p-cat">
+        <option value="hoy">Hoy</option>
+        <option value="semana">Esta semana</option>
+        <option value="mes">Este mes</option>
+        <option value="especial">Evento especial</option>
+      </select>
+      <label>Condiciones</label><input id="p-cond">
+      <label>URL de imagen (opcional)</label><input id="p-img">
+      <label><input type="checkbox" id="p-feat" style="width:auto;margin-right:6px">Mostrar como "Promoción de la semana" destacada</label>
+      <button class="btn-p" onclick="crearPromo()">Crear promoción</button>
+    </div>
+    <div id="promosList"></div>
+  </div>
+
+  <!-- RESERVAS -->
+  <div id="tab-reservas" class="tabtab hidden">
+    <div class="tabs" id="resFilterTabs">
+      <button data-f="ACTIVAS" class="active">Activas</button>
+      <button data-f="TODAS">Todas</button>
+    </div>
+    <div class="card" style="overflow-x:auto">
+      <table id="resTable"><thead><tr><th>N°</th><th>Fecha</th><th>Horario</th><th>Juego</th><th>Cliente</th><th>Estado</th><th>Acciones</th></tr></thead><tbody></tbody></table>
+    </div>
+  </div>
+
+  <!-- BLOQUEOS -->
+  <div id="tab-bloqueos" class="tabtab hidden">
+    <div class="card">
+      <h3>Nuevo bloqueo</h3>
+      <label>Fecha</label><input id="b-fecha" type="date">
+      <label>Horario (dejar vacío = todo el día)</label>
+      <select id="b-slot"><option value="">Todo el día</option></select>
+      <label>Juego (dejar vacío = todos)</label>
+      <select id="b-game"><option value="">Todos los juegos</option></select>
+      <label>Motivo (uso interno)</label><input id="b-motivo" placeholder="Ej: Mantenimiento">
+      <button class="btn-p" onclick="crearBloqueo()">Crear bloqueo</button>
+    </div>
+    <div id="bloqueosList"></div>
+  </div>
+
+  <!-- CONFIG -->
+  <div id="tab-config" class="tabtab hidden">
+    <div class="card">
+      <h3>Configuración general</h3>
+      <label>Porcentaje de seña (%)</label><input id="cfg-deposit" type="number">
+      <label>Plazo para pagar la seña</label>
+      <select id="cfg-hold">
+        <option value="60">1 hora</option>
+        <option value="120">2 horas</option>
+        <option value="360">6 horas</option>
+        <option value="720">12 horas</option>
+        <option value="1440">24 horas</option>
+      </select>
+      <label>Días laborales</label>
+      <div class="grid2" id="cfg-days"></div>
+      <h3 style="margin-top:16px">Horarios de trabajo</h3>
+      <div id="cfg-slots"></div>
+      <button class="btn-s" onclick="agregarSlot()">+ Agregar horario</button>
+      <div style="height:12px"></div>
+      <button class="btn-p" onclick="guardarConfig()">Guardar configuración</button>
+    </div>
+  </div>
+</div>
+
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-app-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-firestore-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-auth-compat.js"></script>
+<script src="https://www.gstatic.com/firebasejs/10.13.2/firebase-functions-compat.js"></script>
+<script src="/config.js"></script>
+<script>
+const DIAS = ['Domingo','Lunes','Martes','Miércoles','Jueves','Viernes','Sábado'];
+const JUEGOS_INICIALES = [
+  {id:'reloj-mecanico', name:'Reloj Mecánico'},
+  {id:'foot-pool', name:'Foot Pool'},
+  {id:'cama-elastica', name:'Cama Elástica'},
+  {id:'montessori', name:'Montessori'},
+  {id:'tejo', name:'Tejo'},
+  {id:'bowling', name:'Bowling'},
+  {id:'4-en-linea', name:'4 en Línea'},
+];
+let GAMES=[], COMBOS=[], PROMOS=[], SETTINGS={}, BLOCKS=[];
+
+auth.onAuthStateChanged(user=>{
+  document.getElementById('loginBox').classList.toggle('hidden', !!user);
+  document.getElementById('app').classList.toggle('hidden', !user);
+  if(user){ document.getElementById('userEmail').textContent = user.email; iniciarPanel(); }
+});
+function hacerLogin(){
+  const email = document.getElementById('loginEmail').value.trim();
+  const pass = document.getElementById('loginPass').value;
+  auth.signInWithEmailAndPassword(email, pass).catch(e=>{
+    const el = document.getElementById('loginError');
+    el.textContent = 'No se pudo ingresar: ' + e.message;
+    el.classList.remove('hidden');
+  });
+}
+function hacerLogout(){ auth.signOut(); }
+
+document.querySelectorAll('.tabs button[data-tab]').forEach(b=>{
+  b.addEventListener('click', ()=>{
+    document.querySelectorAll('.tabs button[data-tab]').forEach(x=>x.classList.remove('active'));
+    b.classList.add('active');
+    document.querySelectorAll('.tabtab').forEach(t=>t.classList.add('hidden'));
+    document.getElementById('tab-'+b.dataset.tab).classList.remove('hidden');
+  });
+});
+
+function iniciarPanel(){
+  db.collection('games').orderBy('order','asc').onSnapshot(s=>{ GAMES = s.docs.map(d=>({id:d.id,...d.data()})); renderJuegos(); renderComboJuegos(); });
+  db.collection('combos').onSnapshot(s=>{ COMBOS = s.docs.map(d=>({id:d.id,...d.data()})); renderCombos(); });
+  db.collection('promotions').onSnapshot(s=>{ PROMOS = s.docs.map(d=>({id:d.id,...d.data()})); renderPromos(); });
+  db.collection('blocks').onSnapshot(s=>{ BLOCKS = s.docs.map(d=>({id:d.id,...d.data()})); renderBloqueos(); });
+  db.collection('settings').doc('config').onSnapshot(d=>{ SETTINGS = d.exists? d.data():{}; renderConfig(); renderSlotSelects(); });
+  cargarReservas('ACTIVAS');
+  document.querySelectorAll('#resFilterTabs button').forEach(b=>{
+    b.addEventListener('click', ()=>{
+      document.querySelectorAll('#resFilterTabs button').forEach(x=>x.classList.remove('active'));
+      b.classList.add('active'); cargarReservas(b.dataset.f);
+    });
+  });
+}
+
+/* ---------------- SEED INICIAL ---------------- */
+async function cargarDatosIniciales(){
+  const batch = db.batch();
+  JUEGOS_INICIALES.forEach((g,i)=>{
+    const ref = db.collection('games').doc(g.id);
+    batch.set(ref, {
+      name:g.name, order:i, description:'', ageRange:'', capacity:'', dimensions:'',
+      price:0, units:1, photoURL:'', active:true
+    }, {merge:true});
+  });
+  const settingsRef = db.collection('settings').doc('config');
+  const settingsSnap = await settingsRef.get();
+  if(!settingsSnap.exists){
+    batch.set(settingsRef, {
+      businessName:'Entrejuegos Eventos', depositPercent:30, holdMinutes:120,
+      workDays:[0,1,2,3,4,5,6],
+      timeSlots:[
+        {id:'manana', label:'09:00 a 12:00', start:'09:00', end:'12:00'},
+        {id:'tarde', label:'13:00 a 16:00', start:'13:00', end:'16:00'},
+        {id:'noche', label:'17:00 a 20:00', start:'17:00', end:'20:00'}
+      ]
+    });
+  }
+  await batch.commit();
+  alert('Listo. Revisá la pestaña Configuración: los horarios cargados son un EJEMPLO, cambialos por los reales de tu negocio.');
+}
+
+/* ---------------- JUEGOS ---------------- */
+function renderJuegos(){
+  document.getElementById('juegosList').innerHTML = GAMES.map(g=>`
+    <div class="card">
+      <div class="grid2">
+        <div><label>Nombre</label><input value="${esc(g.name)}" disabled></div>
+        <div><label>Precio</label><input type="number" id="g-price-${g.id}" value="${g.price||''}"></div>
+      </div>
+      <label>Descripción</label><textarea rows="2" id="g-desc-${g.id}">${esc(g.description||'')}</textarea>
+      <div class="grid2">
+        <div><label>Edad recomendada</label><input id="g-age-${g.id}" value="${esc(g.ageRange||'')}"></div>
+        <div><label>Capacidad</label><input id="g-cap-${g.id}" value="${esc(g.capacity||'')}"></div>
+      </div>
+      <div class="grid2">
+        <div><label>Medidas</label><input id="g-dim-${g.id}" value="${esc(g.dimensions||'')}"></div>
+        <div><label>Unidades disponibles</label><input type="number" id="g-units-${g.id}" value="${g.units||1}"></div>
+      </div>
+      <label>URL de foto</label><input id="g-photo-${g.id}" value="${esc(g.photoURL||'')}">
+      <label><input type="checkbox" id="g-active-${g.id}" style="width:auto;margin-right:6px" ${g.active!==false?'checked':''}>Activo (visible en la app)</label>
+      <button class="btn-p" onclick="guardarJuego('${g.id}')">Guardar ${esc(g.name)}</button>
+    </div>`).join('') || '<p class="small">Todavía no cargaste los juegos iniciales.</p>';
+}
+async function guardarJuego(id){
+  await db.collection('games').doc(id).update({
+    price: Number(document.getElementById('g-price-'+id).value)||0,
+    description: document.getElementById('g-desc-'+id).value,
+    ageRange: document.getElementById('g-age-'+id).value,
+    capacity: document.getElementById('g-cap-'+id).value,
+    dimensions: document.getElementById('g-dim-'+id).value,
+    units: Number(document.getElementById('g-units-'+id).value)||0,
+    photoURL: document.getElementById('g-photo-'+id).value,
+    active: document.getElementById('g-active-'+id).checked,
+  });
+  alert('Guardado');
+}
+
+/* ---------------- COMBOS ---------------- */
+function renderComboJuegos(){
+  document.getElementById('c-juegos').innerHTML = GAMES.map(g=>`
+    <label><input type="checkbox" value="${g.id}" class="combo-chk" style="width:auto;margin-right:6px">${esc(g.name)}</label>`).join('');
+}
+async function crearCombo(){
+  const gameIds = [...document.querySelectorAll('.combo-chk:checked')].map(c=>c.value);
+  await db.collection('combos').add({
+    name: document.getElementById('c-nombre').value,
+    gameIds, description: document.getElementById('c-desc').value,
+    regularPrice: Number(document.getElementById('c-precio').value)||0,
+    promoPrice: Number(document.getElementById('c-promo').value)||0,
+    conditions: document.getElementById('c-cond').value,
+    imageURL: document.getElementById('c-img').value,
+    active:true, order: COMBOS.length, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+function renderCombos(){
+  document.getElementById('combosList').innerHTML = COMBOS.map(c=>`
+    <div class="card"><strong>${esc(c.name)}</strong> — $${c.promoPrice||c.regularPrice||0}
+      <button class="btn-d" style="float:right" onclick="eliminarCombo('${c.id}')">Eliminar</button></div>`).join('');
+}
+function eliminarCombo(id){ if(confirm('¿Eliminar este combo?')) db.collection('combos').doc(id).delete(); }
+
+/* ---------------- PROMOCIONES ---------------- */
+async function crearPromo(){
+  await db.collection('promotions').add({
+    title: document.getElementById('p-titulo').value,
+    description: document.getElementById('p-desc').value,
+    oldPrice: Number(document.getElementById('p-old').value)||0,
+    newPrice: Number(document.getElementById('p-new').value)||0,
+    startDate: document.getElementById('p-ini').value ? new Date(document.getElementById('p-ini').value) : null,
+    endDate: document.getElementById('p-fin').value ? new Date(document.getElementById('p-fin').value) : null,
+    category: document.getElementById('p-cat').value,
+    conditions: document.getElementById('p-cond').value,
+    imageURL: document.getElementById('p-img').value,
+    featured: document.getElementById('p-feat').checked,
+    active:true, createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+function renderPromos(){
+  document.getElementById('promosList').innerHTML = PROMOS.map(p=>`
+    <div class="card"><strong>${esc(p.title)}</strong> <span class="small">(${p.category})</span>
+      <button class="btn-d" style="float:right" onclick="eliminarPromo('${p.id}')">Eliminar</button>
+      <button class="btn-s" style="float:right;margin-right:8px" onclick="togglePromo('${p.id}', ${p.active===false})">${p.active===false?'Activar':'Desactivar'}</button>
+    </div>`).join('');
+}
+function eliminarPromo(id){ if(confirm('¿Eliminar esta promoción?')) db.collection('promotions').doc(id).delete(); }
+function togglePromo(id, val){ db.collection('promotions').doc(id).update({active:val}); }
+
+/* ---------------- RESERVAS ---------------- */
+async function cargarReservas(filtro){
+  let q = db.collection('reservations').orderBy('createdAt','desc').limit(100);
+  const snap = await q.get();
+  let rows = snap.docs.map(d=>({id:d.id,...d.data()}));
+  if(filtro==='ACTIVAS') rows = rows.filter(r=>['PENDIENTE_SEÑA','SEÑA_PAGADA','RESERVA_CONFIRMADA'].includes(r.status));
+  const tbody = document.querySelector('#resTable tbody');
+  tbody.innerHTML = rows.map(r=>`
+    <tr>
+      <td>${r.reservationNumber}</td><td>${r.date}</td><td>${r.slotLabel||''}</td><td>${esc(r.itemName||'')}</td>
+      <td>${esc(r.customerName||'')}<br><span class="small">${esc(r.phone||'')}</span></td>
+      <td><span class="pill" style="background:rgba(255,210,63,.18);color:#ffd23f">${r.status}</span></td>
+      <td>
+        ${r.status==='PENDIENTE_SEÑA' ? `<button class="btn-p" onclick="confirmarSeña('${r.id}')">Seña recibida</button>`:''}
+        ${['PENDIENTE_SEÑA','SEÑA_PAGADA','RESERVA_CONFIRMADA'].includes(r.status) ? `<button class="btn-d" onclick="cancelarReserva('${r.id}')">Cancelar</button>`:''}
+      </td>
+    </tr>`).join('') || '<tr><td colspan="7" class="small">Sin reservas.</td></tr>';
+}
+async function confirmarSeña(id){
+  await functionsClient.httpsCallable('confirmarSeña')({reservationId:id});
+  cargarReservas(document.querySelector('#resFilterTabs button.active').dataset.f);
+}
+async function cancelarReserva(id){
+  if(!confirm('¿Cancelar esta reserva y liberar el horario?')) return;
+  await functionsClient.httpsCallable('cancelarReserva')({reservationId:id, motivo:'Cancelada por el administrador'});
+  cargarReservas(document.querySelector('#resFilterTabs button.active').dataset.f);
+}
+
+/* ---------------- BLOQUEOS ---------------- */
+function renderSlotSelects(){
+  const opts = (SETTINGS.timeSlots||[]).map(s=>`<option value="${s.id}">${esc(s.label)}</option>`).join('');
+  document.getElementById('b-slot').innerHTML = '<option value="">Todo el día</option>' + opts;
+  document.getElementById('b-game').innerHTML = '<option value="">Todos los juegos</option>' + GAMES.map(g=>`<option value="${g.id}">${esc(g.name)}</option>`).join('');
+}
+async function crearBloqueo(){
+  const fecha = document.getElementById('b-fecha').value;
+  if(!fecha){ alert('Elegí una fecha'); return; }
+  await db.collection('blocks').add({
+    date: fecha, slotId: document.getElementById('b-slot').value || null,
+    gameId: document.getElementById('b-game').value || null,
+    reason: document.getElementById('b-motivo').value,
+    createdAt: firebase.firestore.FieldValue.serverTimestamp()
+  });
+}
+function renderBloqueos(){
+  document.getElementById('bloqueosList').innerHTML = BLOCKS.map(b=>`
+    <div class="card">${b.date} ${b.slotId?'· '+esc(b.slotId):'· Todo el día'} ${b.gameId?'· '+esc(b.gameId):'· Todos los juegos'}<br>
+    <span class="small">${esc(b.reason||'')}</span>
+    <button class="btn-d" style="float:right" onclick="eliminarBloqueo('${b.id}')">Quitar</button></div>`).join('') || '<p class="small">Sin bloqueos.</p>';
+}
+function eliminarBloqueo(id){ db.collection('blocks').doc(id).delete(); }
+
+/* ---------------- CONFIG ---------------- */
+function renderConfig(){
+  document.getElementById('cfg-deposit').value = SETTINGS.depositPercent ?? 30;
+  document.getElementById('cfg-hold').value = SETTINGS.holdMinutes ?? 120;
+  document.getElementById('cfg-days').innerHTML = DIAS.map((d,i)=>`
+    <label><input type="checkbox" class="cfg-day" value="${i}" style="width:auto;margin-right:6px" ${(SETTINGS.workDays||[]).includes(i)?'checked':''}>${d}</label>`).join('');
+  document.getElementById('cfg-slots').innerHTML = '';
+  (SETTINGS.timeSlots||[]).forEach(s=>agregarSlot(s));
+}
+function agregarSlot(s){
+  s = s || {id:'slot'+Date.now(), label:'', start:'', end:''};
+  const div = document.createElement('div');
+  div.className='grid2'; div.style.marginBottom='6px';
+  div.dataset.slotId = s.id;
+  div.innerHTML = `<input placeholder="Etiqueta (ej: Mañana 09 a 12)" class="slot-label" value="${esc(s.label)}">
+    <div style="display:flex;gap:6px"><input type="time" class="slot-start" value="${s.start||''}"><input type="time" class="slot-end" value="${s.end||''}"><button class="btn-d" onclick="this.closest('.grid2').remove()">✕</button></div>`;
+  document.getElementById('cfg-slots').appendChild(div);
+}
+async function guardarConfig(){
+  const workDays = [...document.querySelectorAll('.cfg-day:checked')].map(c=>Number(c.value));
+  const timeSlots = [...document.getElementById('cfg-slots').children].map(div=>({
+    id: div.dataset.slotId,
+    label: div.querySelector('.slot-label').value,
+    start: div.querySelector('.slot-start').value,
+    end: div.querySelector('.slot-end').value,
+  }));
+  await db.collection('settings').doc('config').set({
+    depositPercent: Number(document.getElementById('cfg-deposit').value)||0,
+    holdMinutes: Number(document.getElementById('cfg-hold').value)||120,
+    workDays, timeSlots, businessName:'Entrejuegos Eventos'
+  }, {merge:true});
+  alert('Configuración guardada');
+}
+
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g, c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+</script>
+</body>
+</html>
