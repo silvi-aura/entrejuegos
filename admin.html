@@ -364,12 +364,33 @@ async function cargarReservas(filtro){
     </tr>`).join('') || '<tr><td colspan="7" class="small">Sin reservas.</td></tr>';
 }
 async function confirmarSeña(id){
-  await functionsClient.httpsCallable('confirmarSeña')({reservationId:id});
+  await db.collection('reservations').doc(id).update({
+    status: 'RESERVA_CONFIRMADA',
+    depositConfirmedAt: firebase.firestore.FieldValue.serverTimestamp(),
+    updatedAt: firebase.firestore.FieldValue.serverTimestamp(),
+  });
   cargarReservas(document.querySelector('#resFilterTabs button.active').dataset.f);
 }
 async function cancelarReserva(id){
   if(!confirm('¿Cancelar esta reserva y liberar el horario?')) return;
-  await functionsClient.httpsCallable('cancelarReserva')({reservationId:id, motivo:'Cancelada por el administrador'});
+  const ref = db.collection('reservations').doc(id);
+  try{
+    await db.runTransaction(async (tx)=>{
+      const snap = await tx.get(ref);
+      if(!snap.exists) throw new Error('Reserva no encontrada.');
+      const r = snap.data();
+      const activos = ['PENDIENTE_SEÑA','SEÑA_PAGADA','RESERVA_CONFIRMADA'];
+      if(!activos.includes(r.status)) return;
+      const gameIds = r.gameIds || [r.gameId].filter(Boolean);
+      const availRefs = gameIds.map(gid=>db.collection('availability').doc(`${r.date}_${r.slotId}_${gid}`));
+      const availSnaps = await Promise.all(availRefs.map(rf=>tx.get(rf)));
+      availRefs.forEach((rf,i)=>{
+        const current = availSnaps[i].exists ? (availSnaps[i].data().reservedCount||0) : 0;
+        tx.set(rf, {reservedCount: Math.max(current-1,0), updatedAt: firebase.firestore.Timestamp.now()}, {merge:true});
+      });
+      tx.update(ref, {status:'CANCELADA', cancelReason:'Cancelada por el administrador', updatedAt: firebase.firestore.Timestamp.now()});
+    });
+  }catch(e){ alert(e.message); return; }
   cargarReservas(document.querySelector('#resFilterTabs button.active').dataset.f);
 }
 
